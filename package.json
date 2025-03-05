@@ -22,7 +22,7 @@
 		"url": "git+https://github.com/varunsridharan/action-hashnode-blog.git"
 	},
 	"devDependencies": {
-		"@actions/core": "^1.2.5",
+		"@actions/core": "^1.11.1",
 		"ava": "^6.2.0",
 		"esmock": "^2.7.0",
 		"gist-box": "^0.3.1"
