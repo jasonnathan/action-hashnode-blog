@@ -1,29 +1,24 @@
 name: 'Hashnode Blog'
-description: 'Pulls Your Latest Blog Post From Hasnode'
+description: 'Pulls your latest blog post from Hashnode'
 
 inputs:
   TYPE:
-    description: "Set it to GIST if you are using this for a pinned gists"
-    default: "REPOSITORY"
+    description: "Set it to GIST if you are using this for a pinned gist"
+    default: "gist"
     required: false
   BLOG_URL:
-    description: "Provide your custom blog url. or leave it empty to auto generate"
-    default: ""
-    required: false
+    description: "Your Hashnode blog URL (e.g., example.hashnode.dev, myblog.com)"
+    required: true
   FILE:
-    description: "Provide GIST ID if Type is Set To Gists or provide a valid file location"
+    description: "Provide a GIST ID if TYPE is set to 'gist', otherwise provide a valid file path"
     default: "README.md"
     required: false
-  USERNAME:
-    description: "Your Hashnode Username"
-    default: ""
-    required: true
   STYLE:
-    description: "Provide Which Style You Need"
+    description: "Output style (e.g., list, list-ordered, blog, blog-grid-2)"
     default: 'list'
     required: false
   COUNT:
-    description: "No of Latest Post To Show"
+    description: "Number of latest posts to display"
     default: "6"
     required: false
 
@@ -32,5 +27,5 @@ branding:
   color: 'blue'
 
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: 'node20'
+  main: 'src/index.js'  # ✅ Fix: No more `dist/`, now uses pure ESM

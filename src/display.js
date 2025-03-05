@@ -1,103 +1,84 @@
-const helpers = require("./helpers");
+import { imgtag, atag, formatDateRange } from "./helpers.js";
 
-function blog_table(posts, style) {
-	let column = style.split("-");
-	column = typeof column[2] !== "undefined" ? column[2] : 2;
+const LIST_ITEM = (index, title, url) => `${index} [${title}](${url})`;
+const GIST_ITEM = (index, title) => `${index}. ${title}`;
 
+const BLOG_ITEM = (title, url, coverImage, publishedAt, updatedAt, description) => `
+<h3>${atag(url, title, title)}</h3>
+${coverImage ? imgtag(coverImage, url, title, "", "400px") : ""}
+${formatDateRange(publishedAt, updatedAt)}
+<p>${description || ""}</p>`;
+
+const BLOG_SIDE_ITEM = (title, url, coverImage, publishedAt, updatedAt, description, align) => `
+<p align="left">
+${coverImage ? imgtag(coverImage, url, title, align, "250px") : ""}
+${atag(url, title, `<strong>${title}</strong>`)}
+${formatDateRange(publishedAt, updatedAt)}
+<br/> ${description || ""}
+</p><br/>`;
+
+const blog_table = (posts, style) => {
+	let column = style.split("-")[2] || 2;
 	let html = "<table><tr>";
 
-	posts.forEach((post, index) => {
-		const { url, title, brief, coverImage, dateUpdated, dateAdded } = post;
+	return posts.reduce((acc, { url, title, seo, coverImage, updatedAt, publishedAt }, i) => {
+		if (i !== 0 && i % column === 0) acc += "</tr><tr>";
+		return acc + `<td>${coverImage?.url ? imgtag(coverImage.url, url, title, "", "") : ""}
+		${atag(url, title, `<strong>${title}</strong>`)}
+		${formatDateRange(publishedAt, updatedAt)}
+		<br/> ${seo?.description || ""}</td>`;
+	}, html) + "</tr></table>";
+};
 
-		if (0 !== index && index % column === 0) {
-			html += "</tr><tr>";
-		}
-
-		html += `<td>${helpers.img(coverImage, url, title, "", "")}
-${helpers.a(url, title, `<strong>${title}</strong>`)}
-<div><strong>${helpers.parseDate(dateAdded)}</strong>${
-			dateUpdated === null
-				? ""
-				: ` | <strong>Updated: ${helpers.parseDate(
-						dateUpdated
-				  )}</strong>`
-		}</div>
-<br/> ${brief}</td>`;
-	});
-
-	return (html += "</tr></table>");
-}
-
-async function lists(posts, STYLE) {
-	let markdown = [];
+// List Renderer
+export function list(posts, STYLE) {
 	STYLE = STYLE.toLowerCase();
-	posts.forEach((post, index) => {
+
+	return posts.reduce((acc, { title, url }, i) => {
 		switch (STYLE) {
 			case "list":
 			case "list-unordered":
-				markdown.push(`- [${post.title}](${post.url})`);
-				break;
+				return acc + "\n" + LIST_ITEM("-", title, url);
 			case "list-ordered":
-				markdown.push(`1. [${post.title}](${post.url})`);
-				break;
+				return acc + "\n" + LIST_ITEM(`${i + 1}.`, title, url);
 			case "list-gist":
-				markdown.push(`${index + 1}. ${post.title}`);
-				break;
+				return acc + "\n" + GIST_ITEM(i + 1, title);
+			default:
+				return acc;
 		}
-	});
-	return markdown.join("\n");
+	}, "");
 }
 
-async function blog(posts, STYLE) {
-	let markdown = [];
+// Blog Renderer
+export function blog(posts, STYLE) {
 	STYLE = STYLE.toLowerCase();
-	let isalternate = "blog-alternate" === STYLE;
-	STYLE = "blog-alternate" === STYLE ? "blog-left" : STYLE;
 
-	if (STYLE.startsWith("blog-grid")) {
-		return blog_table(posts, STYLE);
-	}
+	if (STYLE.startsWith("blog-grid")) return blog_table(posts, STYLE);
 
-	posts.forEach((post) => {
-		const { url, title, brief, coverImage, dateUpdated, dateAdded } = post;
+	let nextStyle = "blog-left";
+
+	return posts.reduce((acc, { url, title, seo, coverImage, updatedAt, publishedAt }) => {
+		const imageUrl = coverImage?.url || "";
+		const description = seo?.description || "";
 
 		switch (STYLE) {
 			case "blog":
-				markdown.push(`<h3>${helpers.a(url, title, title)}</h3>
-${helpers.img(coverImage, url, title, "", "400px")}
-<div><strong>${helpers.parseDate(dateAdded)}</strong>${
-					dateUpdated === null
-						? ""
-						: ` | <strong>Updated: ${helpers.parseDate(
-								dateUpdated
-						  )}</strong>`
-				}</div>
-<p>${brief}</p>`);
-				break;
+				return acc + BLOG_ITEM(title, url, imageUrl, publishedAt, updatedAt, description);
+
 			case "blog-left":
 			case "blog-right":
-				let align = "blog-left" === STYLE ? "left" : "right";
-				markdown.push(`<p align="left">
-${helpers.img(coverImage, url, title, align, "250px")}
-${helpers.a(url, title, `<strong>${title}</strong>`)}
-<div><strong>${helpers.parseDate(dateAdded)}</strong>${
-					dateUpdated === null
-						? ""
-						: ` | <strong>Updated: ${helpers.parseDate(
-								dateUpdated
-						  )}</strong>`
-				}</div>
-<br/> ${brief} </p> <br/> <br/>`);
-				if (isalternate) {
-					STYLE = "blog-left" === STYLE ? "blog-right" : "blog-left";
-				}
-				break;
-		}
-	});
-	return markdown.join(`\n`);
-}
+				let align = STYLE === "blog-left" ? "left" : "right";
+				return acc + BLOG_SIDE_ITEM(title, url, imageUrl, publishedAt, updatedAt, description, align);
 
-module.exports = {
-	list: lists,
-	blog: blog,
-};
+			case "blog-alternate":
+				let altAlign = nextStyle === "blog-left" ? "left" : "right";
+				let result = BLOG_SIDE_ITEM(title, url, imageUrl, publishedAt, updatedAt, description, altAlign);
+				// Flip next row
+				nextStyle = nextStyle === "blog-left" ? "blog-right" : "blog-left";
+				return acc + result;
+
+			default:
+				return acc;
+		}
+	}, "");
+}

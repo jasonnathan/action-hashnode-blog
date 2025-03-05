@@ -1,13 +1,21 @@
 {
 	"name": "action-hashnode-blog",
-	"version": "1.0.0",
+	"version": "1.3.0",
+	"type": "module",
 	"funding": "https://sva.onl/sponsor",
 	"description": " Fetch & Display Your Hashnode blog posts. ",
-	"engines": {
-		"node": "16.16.0"
-	},
 	"scripts": {
-		"prepare": "ncc build ./src/index.js -o dist --source-map --license licenses.txt"
+		"test": "ava"
+	},
+	"keywords": [
+		"hashnode",
+		"blog",
+		"action",
+		"hashnode-blog",
+		"hashnode-action"
+	],
+	"engines": {
+		"node": ">=18"
 	},
 	"repository": {
 		"type": "git",
@@ -15,7 +23,8 @@
 	},
 	"devDependencies": {
 		"@actions/core": "^1.2.5",
-		"@vercel/ncc": "^0.24.1",
+		"ava": "^6.2.0",
+		"esmock": "^2.7.0",
 		"gist-box": "^0.3.1"
 	},
 	"author": "Varun Sridharan <varunsridharan23@gmail.com> (https://varunsridharan.in)",

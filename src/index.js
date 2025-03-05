@@ -1,78 +1,99 @@
-const query       = require( './query-hashnode' );
-const render      = require( './display' );
-const core        = require( '@actions/core' );
-const fs          = require( "fs" );
-const commitFile  = require( './commit-file' );
-const { GistBox } = require( 'gist-box' );
+import query from './query-hashnode.js';
+import { list, blog } from './display.js';
+import { startGroup, info, endGroup, error as _error, setFailed } from '@actions/core';
+import { readFileSync, writeFileSync } from "fs";
+import commitFile from './commit-file.js';
+import { GistBox } from 'gist-box';
 
-// most @actions toolkit packages have async methods
-async function run() {
+// 🛠 Retrieve configuration inputs
+export function getConfig() {
+	return {
+		TYPE: process.env.TYPE?.toLowerCase() || "",
+		FILE: process.env.FILE || "",
+		STYLE: process.env.STYLE?.toLowerCase() || "",
+		COUNT: process.env.COUNT || "5",
+		BLOG_URL: process.env.BLOG_URL?.toLowerCase() || "",
+		GITHUB_WORKSPACE: process.env.GITHUB_WORKSPACE || "",
+		GITHUB_TOKEN: process.env.GITHUB_TOKEN || "",
+	};
+}
+
+// 🛠 Log parsed configuration
+export function logConfig(config) {
+	startGroup('Parsed Config');
+	info(`Type                     = ${config.TYPE}`);
+	info(`File / Gist ID           = ${config.FILE}`);
+	info(`Hashnode Blog URL        = ${config.BLOG_URL}`);
+	info(`Output Style             = ${config.STYLE}`);
+	info(`No Of Posts To Display   = ${config.COUNT}`);
+	endGroup();
+}
+
+// 🛠 Fetch latest posts
+export async function fetchPosts(blogUrl, count) {
+	const results = await query(blogUrl, count);
+	startGroup('Latest Posts');
+	info(JSON.stringify(results, null, 2));
+	endGroup();
+	return results;
+}
+
+// 🛠 Generate output based on style
+export function generateOutput(posts, style) {
+	if (style.startsWith('list')) return list(posts, style);
+	if (style.startsWith('blog')) return blog(posts, style);
+	return '';
+}
+
+// 🛠 Handle updating Gist
+export async function updateGist(config, posts) {
+	const output = generateOutput(posts, config.STYLE);
+	const listData = await list(posts, 'list-gist');
+
+	const box = new GistBox({ id: config.FILE, token: config.GITHUB_TOKEN });
+
+	await box.update({
+		filename: 'blog.md',
+		description: 'My Latest Blogs 👇',
+		content: listData + '\n\n' + output
+	});
+}
+
+// 🛠 Handle updating a local file
+export async function updateFile(config, posts) {
+	const filePath = `${config.GITHUB_WORKSPACE}/${config.FILE}`;
+	const fileContent = readFileSync(filePath, 'utf-8');
+	const output = generateOutput(posts, config.STYLE);
+
+	const regex = /^(<!--(?:\s|)HASHNODE_BLOG:(?:START|start)(?:\s|)-->)(?:\n|)([\s\S]*?)(?:\n|)(<!--(?:\s|)HASHNODE_BLOG:(?:END|end)(?:\s|)-->)$/gm;
+	const updatedContent = fileContent.replace(regex, `$1\n${output}\n$3`);
+
+	writeFileSync(filePath, updatedContent);
+
+	await commitFile().catch(err => {
+		_error(err);
+		info(err.stack);
+		process.exit(err.code || -1);
+	});
+}
+
+// 🏁 Main execution function
+export async function run(config) {
 	try {
-		const TYPE     = core.getInput( 'TYPE' );
-		const FILE     = core.getInput( 'FILE' );
-		const USERNAME = core.getInput( 'USERNAME' );
-		const STYLE    = core.getInput( 'STYLE' );
-		const COUNT    = core.getInput( 'COUNT' );
-		const BLOG_URL = core.getInput( 'BLOG_URL' );
+		logConfig(config);
+		const posts = await fetchPosts(config.BLOG_URL, config.COUNT);
 
-		core.startGroup( 'Parsed Config' );
-		core.info( `Type                     = ${TYPE}` );
-		core.info( `File / Gist ID           = ${FILE}` );
-		core.info( `Hashnode Username        = ${USERNAME}` );
-		core.info( `Output Style             = ${STYLE}` );
-		core.info( `No Of Posts To Display   = ${COUNT}` );
-		core.endGroup();
-
-
-		const results = await query( USERNAME.toLowerCase(), COUNT, BLOG_URL );
-		let output    = '';
-
-		core.startGroup( 'Latest Posts' );
-		core.info( JSON.stringify( results, null, 2 ) );
-		core.endGroup();
-		core.info( ' ' );
-
-		if( 'gist' === TYPE.toLowerCase() ) {
-			if( STYLE.toLowerCase().startsWith( 'list' ) ) {
-				output = await render.list( results, STYLE );
-			} else {
-				output = await render.list( results, 'list' );
-			}
-
-			let list_data = await render.list( results, 'list-gist' );
-			const box     = new GistBox( { id: FILE, token: process.env.GITHUB_TOKEN } );
-
-			await box.update( {
-				filename: 'blog.md',
-				description: 'My Latest Blogs 👇',
-				content: list_data + '\n\n' + output
-			} );
+		if (config.TYPE === 'gist') {
+			await updateGist(config, posts);
 		} else {
-			const file_path    = `${process.env.GITHUB_WORKSPACE}/${FILE}`;
-			const file_content = fs.readFileSync( file_path );
-
-			if( STYLE.toLowerCase().startsWith( 'list' ) ) {
-				output = await render.list( results, STYLE );
-			} else if( STYLE.toLowerCase().startsWith( 'blog' ) ) {
-				output = await render.blog( results, STYLE );
-			}
-
-
-			const regex  = /^(<!--(?:\s|)HASHNODE_BLOG:(?:START|start)(?:\s|)-->)(?:\n|)([\s\S]*?)(?:\n|)(<!--(?:\s|)HASHNODE_BLOG:(?:END|end)(?:\s|)-->)$/gm;
-			const result = file_content.toString().replace( regex, `$1\n${output}\n$3` );
-
-			fs.writeFileSync( file_path, result );
-
-			await commitFile().catch( err => {
-				core.error( err );
-				core.info( err.stack );
-				process.exit( err.code || -1 );
-			} );
+			await updateFile(config, posts);
 		}
-
-	} catch( error ) {
-		core.setFailed( error.message );
+	} catch (error) {
+		setFailed(error.message);
 	}
 }
 
-run();
+// 🏁 Execute only when run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+	run(getConfig());
+}

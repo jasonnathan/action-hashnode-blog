@@ -1,38 +1,40 @@
-function atag( link, title, content ) {
-	return ( link !== '' ) ? `<a href="${link}" title="${title}">${content}</a>` : content;
+export function atag(link, title, content) {
+	return link !== "" ? `<a href="${link}" title="${title}">${content}</a>` : content;
 }
 
-function imgtag( src, link, title, align, width ) {
-	width   = ( width !== '' ) ? `width="${width}"` : '';
-	align   = ( width !== '' ) ? `align="${align}"` : '';
-	let alt = ( title !== '' ) ? `alt="${title}"` : '';
-	return ( src !== '' ) ? atag( link, title, `<img src="${src}" ${alt} ${width} ${align} />` ) : '';
+export function imgtag(src, link, title, align = "", width = "") {
+	const widthAttr = width ? `width="${width}"` : "";
+	const alignAttr = align ? `align="${align}"` : "";
+	const altAttr = title ? `alt="${title}"` : "";
+	const imgTag = `<img src="${src}" ${[altAttr, widthAttr, alignAttr].filter(Boolean).join(" ")} />`;
+
+	return src ? atag(link, title, imgTag) : "";
 }
 
-module.exports = {
-	a: atag,
-	img: imgtag,
-	post_link: function( post, username, BLOG_URL = false ) {
-		return ( '' !== BLOG_URL ) ? `${BLOG_URL}/${post.slug}` : `https://${username}.hashnode.dev/${post.slug}-${post.cuid}`;
-	},
-	image_size: function( user_value, _default, small, large ) {
-		if( 'small' === user_value ) {
-			return small;
-		}
 
-		if( 'large' === user_value ) {
-			return large;
-		}
+export function post_link(post, BLOG_URL = "") {
+	return post.url ? post.url : `https://${BLOG_URL}/p/${post.slug}`;
+}
 
-		if( '' === user_value ) {
-			return _default;
-		}
-		return user_value;
-	},
-	parseDate(date){
-		const months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec"];
-		const parsedData = new Date(date);
-		return `${parsedData.getDate()} ${months[parsedData.getMonth()]} ${parsedData.getFullYear()}`
-	}
-};
+export function image_size(user_value, _default, small, large) {
+	if (user_value === "small") return small;
+	if (user_value === "large") return large;
+	if (user_value === "") return _default;
+	return user_value;
+}
 
+export function parseDate(date) {
+	if (!date) return "Unknown Date"; 
+	const parsedData = new Date(date);
+	if (isNaN(parsedData.getTime())) return "Invalid Date";
+	const months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec"];
+	return `${parsedData.getDate()} ${months[parsedData.getMonth()]} ${parsedData.getFullYear()}`;
+}
+
+export function formatDateRange(dateAdded, dateUpdated) {
+	const added = `<strong>${parseDate(dateAdded)}</strong>`;
+	const updated = dateUpdated && !isNaN(new Date(dateUpdated))
+			? ` | <strong>Updated: ${parseDate(dateUpdated)}</strong>`
+			: "";
+	return `<div>${added}${updated}</div>`;
+}
