@@ -28,4 +28,4 @@ branding:
 
 runs:
   using: 'node20'
-  main: 'src/index.js'  # ✅ Fix: No more `dist/`, now uses pure ESM
+  main: 'dist/index.js'  # ✅ Must reference the bundled file, not src/index.js

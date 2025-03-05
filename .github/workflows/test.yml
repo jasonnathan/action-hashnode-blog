@@ -13,12 +13,18 @@ jobs:
       - name: "📥 Checkout Repository"
         uses: actions/checkout@v4
 
+      - name: "📦 Install Dependencies"
+        run: npm ci  # ✅ Ensures the right dependencies are installed
+
+      - name: "🛠 Build Action"
+        run: npm run prepare  # ✅ Builds the action with `ncc`
+
       - name: "🚀 Run Hashnode Blog Action"
-        uses: ./  # This runs the local action instead of an external one
+        uses: ./  # ✅ Runs the locally built action
         with:
           BLOG_URL: "https://geekist.co"
           FILE: "README-TEST.md"
-          STYLE: "list"
+          STYLE: "blog-right"
           COUNT: "5"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
