@@ -21,12 +21,14 @@
 		"type": "git",
 		"url": "git+https://github.com/varunsridharan/action-hashnode-blog.git"
 	},
-	"devDependencies": {
-		"@actions/core": "^1.11.1",
-		"ava": "^6.2.0",
-		"esmock": "^2.7.0",
-		"gist-box": "^0.3.1"
-	},
+"dependencies": {
+  "@actions/core": "^1.11.1",
+  "gist-box": "^0.3.1"
+},
+"devDependencies": {
+  "ava": "^6.2.0",
+  "esmock": "^2.7.0"
+},
 	"author": "Varun Sridharan <varunsridharan23@gmail.com> (https://varunsridharan.in)",
 	"license": "MIT",
 	"bugs": {
