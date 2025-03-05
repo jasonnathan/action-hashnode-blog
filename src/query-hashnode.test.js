@@ -58,7 +58,7 @@ global.fetch = async (url, options) => {
 };
 
 // 🛠 Load `query-hashnode.js` with Mocks
-const queryHashnode = await esmock("../src/query-hashnode.js", {
+const { query } = await esmock("../src/query-hashnode.js", {
   "../src/helpers.js": {
     post_link: (post, blogUrl) => post.url || `https://${blogUrl}/p/${post.slug}`
   }
@@ -67,7 +67,7 @@ const queryHashnode = await esmock("../src/query-hashnode.js", {
 // 📝 TEST SUITE
 
 test("query_api() retrieves posts correctly", async (t) => {
-  const posts = await queryHashnode.default("example.com", 5);
+  const posts = await query("example.com", 5);
   t.is(posts.length, 1);
   t.is(posts[0].title, "Understanding Async in JavaScript");
   t.is(posts[0].seo.description, "A beginner-friendly guide to async programming in JavaScript.");
@@ -76,16 +76,16 @@ test("query_api() retrieves posts correctly", async (t) => {
 });
 
 test("query_api() returns an empty array for blogs with no posts", async (t) => {
-  const posts = await queryHashnode.default("empty-blog", 5);
+  const posts = await query("empty-blog", 5);
   t.deepEqual(posts, []);
 });
 
 test("query_api() gracefully handles invalid blog URLs", async (t) => {
-  const posts = await queryHashnode.default(null, 5);
+  const posts = await query(null, 5);
   t.deepEqual(posts, []);
 });
 
 test("query_api() correctly formats post URLs with post_link()", async (t) => {
-  const posts = await queryHashnode.default("example.com", 5);
+  const posts = await query("example.com", 5);
   t.is(posts[0].url, "https://example.com/understanding-async");
 });

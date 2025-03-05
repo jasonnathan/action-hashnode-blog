@@ -5,7 +5,8 @@ const DEFAULT_HEADERS = {
   "Content-type": "application/json",
 };
 
-async function query_api(host, first = 6, after = null) {
+export async function query_api(host, first = 6, after = null) {
+	if(!host) return [];
   const query = `
   query GetPostsOfPublication(
     $host: String, 
@@ -49,23 +50,30 @@ async function query_api(host, first = 6, after = null) {
     filter: { deletedOnly: false },
   };
 
-  const result = await fetch(API_URL, {
-    method: "POST",
-    headers: DEFAULT_HEADERS,
-    body: JSON.stringify({ query, variables }),
-  });
+	try {
 
-  const ApiResponse = await result.json();
+		const result = await fetch(API_URL, {
+			method: "POST",
+			headers: DEFAULT_HEADERS,
+			body: JSON.stringify({ query, variables }),
+		});
 
-  if (!ApiResponse.data.publication || !ApiResponse.data.publication.posts) {
-    return [];
-  }
+		const ApiResponse = await result.json();
 
-  return ApiResponse.data.publication.posts.edges.map((edge) => edge.node);
+		if (!ApiResponse.data.publication || !ApiResponse.data.publication.posts) {
+			return [];
+		}
+	
+		return ApiResponse.data.publication.posts.edges.map((edge) => edge.node);		
+	} catch(e) {
+		// console.error(e);
+		return [];
+	}
+
 }
 
 
-export default async function (blogUrl, limit = 6) {
+export async function query (blogUrl, limit = 6) {
   let posts = await query_api(blogUrl, limit);
   if (!posts) return [];
 
