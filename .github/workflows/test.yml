@@ -1,0 +1,24 @@
+name: "🛠 Test Hashnode Action"
+
+on:
+  workflow_dispatch:  # Allows manual triggering
+  push:
+    branches:
+      - test-action  # Runs when pushing to a "test-action" branch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "📥 Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "🚀 Run Hashnode Blog Action"
+        uses: ./  # This runs the local action instead of an external one
+        with:
+          BLOG_URL: "https://geekist.co"
+          FILE: "README-TEST.md"
+          STYLE: "list"
+          COUNT: "5"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
