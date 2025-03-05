@@ -22,7 +22,7 @@ jobs:
       - name: "🚀 Run Hashnode Blog Action"
         uses: ./  # ✅ Runs the locally built action
         with:
-          BLOG_URL: "https://geekist.co"
+          BLOG_URL: "geekist.co"
           FILE: "README-TEST.md"
           STYLE: "blog-right"
           COUNT: "5"
